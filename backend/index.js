@@ -1,8 +1,12 @@
-const express = require('express');
-const cors = require('cors');
-const cookieParser = require('cookie-parser'); // Add this
-const authRoutes = require('./routes/authRoutes');
+import userRoutes from './routes/userRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
+import roomRoutes from './routes/rooms.js';
+import fileRoutes from './routes/fileRoutes.js';
 
+import express from 'express';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import authRoutes from './routes/authRoutes.js'; 
 
 const app = express();
 
@@ -17,6 +21,11 @@ app.use(cookieParser());
 // Routes
 app.use('/api/auth', authRoutes);
 // Add to your routes
+
+app.use('/api/users', userRoutes);
+app.use('/api/chats', chatRoutes);
+app.use('/api/rooms', roomRoutes);
+app.use('/api/files', fileRoutes);
 
 
 // Error handling middleware

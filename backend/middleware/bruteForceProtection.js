@@ -1,13 +1,13 @@
-const { RateLimiterMemory } = require('rate-limiter-flexible');
+import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 // Configure for login attempts
 const loginLimiter = new RateLimiterMemory({
-  points: 20, // 5 attempts
-  duration: 15 * 60, // 5 minutes
+  points: 20, // 20 attempts
+  duration: 15 * 60, // 15 minutes
   blockDuration: 60 * 15 // Block for 15 minutes after exceeding
 });
 
-const bruteForceProtection = async (req, res, next) => {
+export const bruteForceProtection = async (req, res, next) => {
   try {
     const ip = req.ip;
     await loginLimiter.consume(ip);
@@ -22,5 +22,3 @@ const bruteForceProtection = async (req, res, next) => {
     });
   }
 };
-
-module.exports = {bruteForceProtection};

@@ -1,7 +1,11 @@
-const nodemailer = require('nodemailer');
-require('dotenv').config();
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 console.log(`[DEBUG] Initializing nodemailer transporter`);
+let transporter;
+
 try {
   transporter = nodemailer.createTransport({
     service: 'Gmail',
@@ -11,8 +15,7 @@ try {
     },
   });
   console.log(`[DEBUG] Transporter created successfully`);
-  
-  // Verify transporter connection
+
   transporter.verify((error, success) => {
     if (error) {
       console.error(`[DEBUG] Transporter verification failed: ${error.message}`);
@@ -24,9 +27,7 @@ try {
   console.error(`[DEBUG] Failed to create transporter: ${initError.message}`);
 }
 
-
-
-const send2FACode = async (recipientEmail, verificationCode) => {
+export const send2FACode = async (recipientEmail, verificationCode) => {
   console.log(`[DEBUG] Starting to send 2FA code to: ${recipientEmail}`);
   console.log(`[DEBUG] Using EMAIL_USER: ${process.env.EMAIL_USER ? 'Set' : 'NOT SET'}`);
   console.log(`[DEBUG] Using EMAIL_PASSWORD: ${process.env.EMAIL_PASSWORD ? 'Set' : 'NOT SET'}`);
@@ -54,5 +55,3 @@ const send2FACode = async (recipientEmail, verificationCode) => {
     throw new Error('Failed to send 2FA code. Please try again.');
   }
 };
-
-module.exports = { send2FACode };

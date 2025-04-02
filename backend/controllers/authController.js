@@ -1,10 +1,10 @@
-const User = require('../models/user');
-const Session = require('../models/Sessions');
-const TwoFactorCode = require('../models/TwoFactorCode');
-const { send2FACode } = require('../services/emailService');
-const { generate2FACode } = require('../services/twoFactorService');
+import * as User from '../models/user.js';
+import Session from '../models/Sessions.js';
+import TwoFactorCode from '../models/TwoFactorCode.js';
+import { send2FACode } from '../services/emailService.js';
+import { generate2FACode } from '../services/twoFactorService.js';
 
-const register = async (req, res) => {
+export const register = async (req, res) => {
   const { email, password, username } = req.body;
 
   try {
@@ -40,7 +40,7 @@ const register = async (req, res) => {
   }
 };
 
-const login = async (req, res) => {
+export const login = async (req, res) => {
   const { email, password } = req.body;
   console.log('Login attempt:', { email });
 
@@ -103,7 +103,7 @@ const login = async (req, res) => {
   }
 };
 
-const verify2FA = async (req, res) => {
+export const verify2FA = async (req, res) => {
   const { user_id, code } = req.body;
   
   // Validate input types
@@ -168,7 +168,8 @@ const verify2FA = async (req, res) => {
     });
   }
 };
-const setup2FA = async (req, res) => {
+
+export const setup2FA = async (req, res) => {
   const { user_id } = req.body;
 
   try {
@@ -190,7 +191,7 @@ const setup2FA = async (req, res) => {
   }
 };
 
-const disable2FA = async (req, res) => {
+export const disable2FA = async (req, res) => {
   const { user_id } = req.body;
 
   try {
@@ -212,7 +213,7 @@ const disable2FA = async (req, res) => {
   }
 };
 
-const logout = async (req, res) => {
+export const logout = async (req, res) => {
   try {
     const sessionId = req.cookies.sessionId;
     if (sessionId) {
@@ -236,13 +237,4 @@ const logout = async (req, res) => {
       }
     });
   }
-};
-
-module.exports = {
-  register,
-  login,
-  verify2FA,
-  setup2FA,
-  disable2FA,
-  logout
 };

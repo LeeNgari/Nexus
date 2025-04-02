@@ -1,12 +1,13 @@
-const { body, validationResult } = require('express-validator');
+// validation.js (corrected to use ES modules)
+import { body, validationResult } from 'express-validator';
 
-const validateRegistration = [
+export const validateRegistration = [
   body('email')
     .trim()
     .normalizeEmail()
     .isEmail()
     .withMessage('Please enter a valid email address'),
-  
+
   body('password')
     .isLength({ min: 8 })
     .withMessage('Password must be at least 8 characters long')
@@ -18,17 +19,13 @@ const validateRegistration = [
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         errors: errors.array().map(err => ({
           param: err.param,
-          message: err.msg
-        })) 
+          message: err.msg,
+        })),
       });
     }
     next();
-  }
+  },
 ];
-
-module.exports = {
-  validateRegistration
-};

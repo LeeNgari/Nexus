@@ -1,7 +1,4 @@
-function generate2FACode() {
+// twoFactorService.js (corrected to use ES modules)
+export function generate2FACode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
-
-module.exports = {
-  generate2FACode
-};

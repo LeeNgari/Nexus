@@ -1,5 +1,5 @@
-const pool = require('../config/db');
-const crypto = require('crypto');
+import pool from '../config/db.js'; // Import pool using ESM
+import crypto from 'crypto';
 
 const Session = {
   async create(userId) {
@@ -42,4 +42,4 @@ const Session = {
   }
 };
 
-module.exports = Session;
+export default Session; // Use export default instead of module.exports
