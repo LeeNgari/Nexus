@@ -12,7 +12,7 @@ export const uploadFile = async (req, res) => {
     const fileUrl = `/api/files/${fileName}`;
 
     // If uploaded as part of a chat
-    if (req.body.roomId || req.body.privateChatId) {
+    if (req.body.roomId || req.body.private_chat_id) {
       const messageData = {
         sender_id: req.user.id,
         content: fileUrl,
@@ -22,7 +22,7 @@ export const uploadFile = async (req, res) => {
       if (req.body.roomId) {
         messageData.room_id = req.body.roomId;
       } else {
-        messageData.private_chat_id = req.body.privateChatId;
+        messageData.private_chat_id = req.body.private_chat_id;
       }
 
       const message = await createMessage(messageData);

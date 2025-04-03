@@ -1,17 +1,23 @@
 import pool from '../config/db.js';
 
-export const createMessage = async ({ sender_id, room_id, content, type = 'text' }) => {
+export const createMessage = async ({ sender_id, private_chat_id, content, type = 'text' }) => {
   console.log("problem here")
   const query = `
-    INSERT INTO messages (sender_id, room_id, content, type)
+    INSERT INTO messages (sender_id, private_chat_id, content, type)
     VALUES ($1, $2, $3, $4)
     RETURNING *;
   `;
-  const values = [sender_id, room_id, content, type];
+  const values = [sender_id, private_chat_id, content, type];
   console.log(values)
-  const { rows } = await pool.query(query, values);
-  return rows[0];
+  try {
+    const { rows } = await pool.query(query, values);
+    return rows[0];
+  } catch (error) {
+    console.error('Error creating private message:', error);
+    throw error; // Rethrow the error for the caller to handle
+  }
 };
+
 
 export const findMessageById = async (id) => {
   const query = `
