@@ -1,5 +1,5 @@
 import { storeFile, getFileStream, deleteFile as deleteStoredFile } from '../services/storage.js';
-import { createMessage } from '../models/Message.js';
+import { createMessage , createRoomMessage} from '../models/Message.js';
 import path from 'path';
 
 export const uploadFile = async (req, res) => {
@@ -21,12 +21,13 @@ export const uploadFile = async (req, res) => {
 
       if (req.body.roomId) {
         messageData.room_id = req.body.roomId;
+        const message = await createRoomMessage(messageData);
+        return res.json({ message, fileUrl });
       } else {
         messageData.private_chat_id = req.body.private_chat_id;
+        const message = await createMessage(messageData);
+        return res.json({ message, fileUrl });
       }
-
-      const message = await createMessage(messageData);
-      return res.json({ message, fileUrl });
     }
 
     res.json({ fileUrl });

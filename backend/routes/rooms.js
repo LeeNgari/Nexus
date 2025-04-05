@@ -8,7 +8,7 @@ import {
   removeRoomMember,
   getRoomMessages
 } from '../models/Room.js';
-import { createMessage } from '../models/Message.js';
+import { createRoomMessage } from '../models/Message.js';
 import pool from '../config/db.js';
 
 const router = express.Router();
@@ -109,7 +109,7 @@ router.post('/:id/messages', authenticate, async (req, res) => {
 
     console.log(3)
     // ✅ Step 3: If valid, create the message
-    const message = await createMessage({
+    const message = await createRoomMessage({
       sender_id: userId,
       room_id: roomId,
       content,
