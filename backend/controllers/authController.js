@@ -1,5 +1,5 @@
 import * as User from '../models/user.js';
-import Session from '../models/Sessions.js';
+import Session from '../models/Sessions.js'
 import TwoFactorCode from '../models/TwoFactorCode.js';
 import { send2FACode } from '../services/emailService.js';
 import { generate2FACode } from '../services/twoFactorService.js';
@@ -235,6 +235,59 @@ export const logout = async (req, res) => {
         message: 'Internal server error',
         code: 'SERVER_ERROR'
       }
+    });
+  }
+};
+export const checkAuth = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({
+        error: {
+          message: 'User not found',
+          code: 'USER_NOT_FOUND'
+        }
+      });
+    }
+
+    // Omit sensitive information
+    const { password_hash, ...userData } = user;
+
+    res.json({
+      authenticated: true,
+      user: userData
+    });
+  } catch (error) {
+    console.error('Auth check error:', error);
+    res.status(500).json({
+      error: {
+        message: 'Internal server error',
+        code: 'SERVER_ERROR'
+      }
+    });
+  }
+};
+export const checkSession = async (req, res) => {
+  console.log("session checked")
+  try {
+    // The authenticate middleware already verified the session
+    const user = await User.findById(req.user.id);
+    console.log(req.user.id)
+    if (!user) {
+      return res.status(404).json({
+        error: { message: 'User not found' }
+      });
+    }
+
+    // Return minimal user data
+    res.json({
+      authenticated: !!user,  // Explicit boolean
+      user: user || null
+    });
+  } catch (error) {
+    console.error('Session check error:', error);
+    res.status(500).json({
+      error: { message: 'Internal server error' }
     });
   }
 };
