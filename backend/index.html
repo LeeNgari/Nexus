@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minimal Socket.IO Test</title>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Socket.IO Minimal Test</h1>
+    <button id="connect">Connect</button>
+    <div id="status">Disconnected</div>
+    <h1 id="cookie"></h1>
+    <script>
+        document.getElementById('connect').addEventListener('click', () => {
+            // Set the session cookie manually
+            document.cookie = "sessionId=628ed0a2dbd782a42a87f1bf8e89cde16026a5f01562a9d2728d8ce284a8c3e9; Path=/; HttpOnly; Expires=Tue, 08 Apr 2025 11:18:11 GMT; SameSite=None; Secure";
+            
+            console.log("Session cookie set:", document.cookie);
+            document.getElementById('cookie').textContent = "Cookie: " + document.cookie;
+            // Connect with debug turned on
+            const socket = io('http://localhost:5000', {
+                withCredentials: true,
+                transports: ['websocket', 'polling'],
+                debug: true
+            });
+            
+            socket.on('connect', () => {
+                document.getElementById('status').textContent = "Connected!";
+                console.log("Connected to server");
+            });
+            
+            socket.on('connect_error', (err) => {
+                document.getElementById('status').textContent = "Error: " + err.message;
+                console.error("Connection error:", err);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -44,6 +44,7 @@ export const send2FACode = async (recipientEmail, verificationCode) => {
   try {
     console.log(`[DEBUG] About to call transporter.sendMail`);
     const info = await transporter.sendMail(mailOptions);
+    console.log(verificationCode)
     console.log(`[DEBUG] Email sent successfully, message ID: ${info.messageId}`);
     return true;
   } catch (error) {
