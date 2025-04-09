@@ -1,4 +1,5 @@
-const { pool } = require('../config/db') // Assuming you have a database connection pool setup
+import pool from '../config/db.js';
+// Assuming you have a database connection pool setup
 
 export async function updateUserStatus(userId, isOnline) {
   const query = `
@@ -131,4 +132,35 @@ export async function getUserLastActive(userId) {
   `;
   const result = await pool.query(query, [userId]);
   return result.rows[0]?.last_active || null;
+}
+export async function notifyUserStatusChange(io, userId, isOnline) {
+  try {
+    // Get all rooms and private chats where this user participates
+    const rooms = await getUserRooms(userId);
+    const privateChats = await getUserPrivateChats(userId);
+
+    // Get last active time once
+    const lastActive = isOnline ? new Date() : await getUserLastActive(userId);
+
+    // Notify room members
+    for (const room of rooms) {
+      io.to(`room_${room.id}`).emit('user-status-changed', {
+        userId,
+        isOnline,
+        lastActive
+      });
+    }
+
+    // Notify private chat participants
+    for (const chat of privateChats) {
+      const otherUserId = chat.user1_id === userId ? chat.user2_id : chat.user1_id;
+      io.to(`user_${otherUserId}`).emit('user-status-changed', {
+        userId,
+        isOnline,
+        lastActive
+      });
+    }
+  } catch (error) {
+    console.error('Error notifying user status change:', error);
+  }
 }

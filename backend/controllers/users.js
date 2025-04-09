@@ -45,25 +45,25 @@ import {
       res.status(500).json({ error: 'Search failed' });
     }
   };
-  
-  export const getUserChats = async (req, res) => {
-    console.log("j")
-    console.log(req.user.id)
-    try {
-      const [privateChats, groupChats] = await Promise.all([
-        getUserPrivateChats(req.user.id),
-        findRoomsByUser(req.user.id)
-      ]);
-      
-      res.json({
-        private: privateChats,
-        group: groupChats
-      });
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to get chats' });
-    }
-  };
-  
+
+export const getUserChats = async (req, res) => {
+  console.log("j")
+  console.log(req.user.id)
+  try {
+    const [privateChats, groupChats] = await Promise.all([
+      getUserPrivateChats(req.user.id),
+      findRoomsByUser(req.user.id)
+    ]);
+
+    res.json({
+      private: privateChats,
+      group: groupChats
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get chats' });
+  }
+};
+
   export const updateStatus = async (req, res) => {
     try {
       const { is_online } = req.body;

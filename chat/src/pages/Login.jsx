@@ -14,7 +14,7 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-    
+
     try {
       const response = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
@@ -26,20 +26,29 @@ export default function Login() {
           password,
         }),
       });
-      
+
       const data = await response.json();
-      
+      console.log(data);
+
       if (!response.ok) {
-        throw new Error(data.message || "Login failed");
+        throw new Error(data.error?.message || "Login failed");
       }
-     
-      console.log("lee")
-      sessionStorage.setItem("pending_2fa_user", data.user_id);
-      console.log(typeof data.user_id);
-      
-      // Redirect to dashboard or home page
-      navigate("/TwoFactorForm");
-      
+
+      // Check if 2FA is required
+      if (data.requires_2fa) {
+        console.log("2FA required, redirecting to verification page");
+        // Store user_id for 2FA verification
+        sessionStorage.setItem("pending_2fa_user", data.user_id);
+        // Redirect to 2FA verification page
+        navigate("/TwoFactorForm");
+      } else {
+        console.log("Login successful, no 2FA required");
+        // Store user data (if needed)
+        localStorage.setItem("user", JSON.stringify(data.user));
+        // Redirect directly to dashboard
+        navigate("/dashboard");
+      }
+
     } catch (err) {
       setError(err.message || "Invalid email or password");
     } finally {

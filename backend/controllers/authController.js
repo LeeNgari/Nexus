@@ -51,13 +51,26 @@ export const login = async (req, res) => {
 
     if (!user) {
       console.warn('Invalid login attempt:', { email });
-      return res.status(401).json({ 
+      return res.status(401).json({
         error: {
           message: 'Invalid email or password',
           code: 'INVALID_CREDENTIALS'
         }
       });
     }
+
+    // Create session
+    console.log('Creating session for user:', user.id);
+    const session = await Session.create(user.id);
+    console.log('Session created:', session.session_id);
+
+    // Set session cookie
+    res.cookie('sessionId', session.session_id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    });
 
     // Check if 2FA is enabled
     console.log('Checking 2FA status for user:', user.id);
@@ -71,30 +84,32 @@ export const login = async (req, res) => {
       console.log('Stored 2FA code in DB');
       await send2FACode(user.email, code);
       console.log('Sent 2FA email to:', user.email);
+
+      // Return 2FA required response
+      return res.json({
+        message: '2FA required',
+        requires_2fa: true,
+        user_id: user.id
+      });
     } else {
       console.log('2FA is NOT enabled for user:', user.id);
+
+      // Direct login for users without 2FA
+      const userData = await User.findById(user.id);
+
+      // Return successful login response
+      return res.json({
+        message: 'Login successful',
+        requires_2fa: false,
+        user: {
+          user_id: user.id,
+          email: userData.email
+        }
+      });
     }
-
-    // Create session directly
-    console.log('Creating session for user:', user.id);
-    const session = await Session.create(user.id);
-    console.log('Session created:', session.session_id);
-
-    res.cookie('sessionId', session.session_id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 24 * 60 * 60 * 1000 // 1 day
-    });
-
-    res.json({
-      message: '2FA required',
-      requires_2fa: true,
-      user_id: user.id
-    });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: {
         message: 'Internal server error',
         code: 'SERVER_ERROR'
@@ -105,7 +120,7 @@ export const login = async (req, res) => {
 
 export const verify2FA = async (req, res) => {
   const { user_id, code } = req.body;
-  
+
   // Validate input types
   if (typeof code !== 'string' || code.length !== 6) {
     return res.status(400).json({
@@ -130,9 +145,9 @@ export const verify2FA = async (req, res) => {
   try {
     // Use the UUID string directly instead of numericUserId
     const isValid = await TwoFactorCode.verify(user_id, code);
-    
+
     if (!isValid) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         error: {
           message: 'Invalid or expired 2FA code',
           code: 'INVALID_2FA_CODE'
@@ -144,6 +159,7 @@ export const verify2FA = async (req, res) => {
     const session = await Session.create(user_id);
     const user = await User.findById(user_id);
 
+
     res.cookie('sessionId', session.session_id, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -151,7 +167,7 @@ export const verify2FA = async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000
     });
 
-    res.json({ 
+    res.json({
       message: '2FA verification successful',
       user: {
         user_id: user_id,
@@ -160,7 +176,7 @@ export const verify2FA = async (req, res) => {
     });
   } catch (error) {
     console.error('2FA verification error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: {
         message: 'Internal server error',
         code: 'SERVER_ERROR'
@@ -168,7 +184,6 @@ export const verify2FA = async (req, res) => {
     });
   }
 };
-
 export const setup2FA = async (req, res) => {
   const { user_id } = req.body;
 

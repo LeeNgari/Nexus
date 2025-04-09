@@ -3,7 +3,7 @@ import io from 'socket.io-client'
 const socket = io('http://localhost:5000', {
   transports: ['websocket'], // Force WebSocket, skip polling
   query: {
-    sessionId: '628ed0a2dbd782a42a87f1bf8e89cde16026a5f01562a9d2728d8ce284a8c3e9'
+    sessionId: '6c22c20fe448750f0d93f54a5bfec175821ac41102161d859cc18b938b42bf86'
   }
 });
 
