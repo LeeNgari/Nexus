@@ -47,10 +47,7 @@ export const login = async (req, res) => {
   try {
     // Verify credentials
     const user = await User.verifyPassword(email, password);
-    console.log('User verification result:', user);
-
     if (!user) {
-      console.warn('Invalid login attempt:', { email });
       return res.status(401).json({
         error: {
           message: 'Invalid email or password',
@@ -59,54 +56,39 @@ export const login = async (req, res) => {
       });
     }
 
-    // Create session
-    console.log('Creating session for user:', user.id);
-    const session = await Session.create(user.id);
-    console.log('Session created:', session.session_id);
-
-    // Set session cookie
-    res.cookie('sessionId', session.session_id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 24 * 60 * 60 * 1000 // 1 day
-    });
-
-    // Check if 2FA is enabled
-    console.log('Checking 2FA status for user:', user.id);
+    // Check 2FA status FIRST
     if (user.two_factor_enabled) {
-      console.log('2FA is enabled for user:', user.id);
       const code = generate2FACode();
-      console.log('Generated 2FA code:', code);
-      console.log('User ID from DB:', user.id, 'Type:', typeof user.id);
-      console.log('Attempting to insert 2FA code for user:', user.id);
       await TwoFactorCode.create(user.id, code);
-      console.log('Stored 2FA code in DB');
       await send2FACode(user.email, code);
-      console.log('Sent 2FA email to:', user.email);
 
-      // Return 2FA required response
       return res.json({
         message: '2FA required',
         requires_2fa: true,
         user_id: user.id
       });
-    } else {
-      console.log('2FA is NOT enabled for user:', user.id);
-
-      // Direct login for users without 2FA
-      const userData = await User.findById(user.id);
-
-      // Return successful login response
-      return res.json({
-        message: 'Login successful',
-        requires_2fa: false,
-        user: {
-          user_id: user.id,
-          email: userData.email
-        }
-      });
     }
+
+    // Only create session if 2FA is disabled
+    const session = await Session.create(user.id);
+    const userData = await User.findById(user.id);
+
+    res.cookie('sessionId', session.session_id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // should be false locally
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax', // or 'Strict'
+      maxAge: 24 * 60 * 60 * 1000
+    });
+    
+
+    return res.json({
+      message: 'Login successful',
+      requires_2fa: false,
+      user: {
+        user_id: user.id,
+        email: userData.email
+      }
+    });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({

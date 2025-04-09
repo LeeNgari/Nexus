@@ -14,6 +14,7 @@ const SessionCheck = ({ children }) => {
             if (!response.ok) throw new Error('Session check failed');
 
             const data = await response.json();
+            console.log("lee")
             console.log(data)
             setUser(data.authenticated ? data.user : null);
             console.log(user)

@@ -54,7 +54,7 @@ const TwoFactorForm = ({ onViewChange, email }) => {
   
     const handleVerify = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/auth/verify-2fa', {
+        const response = await fetch('/api/auth/verify-2fa', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',

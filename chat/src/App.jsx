@@ -18,21 +18,7 @@ import { UserContext } from "./contexts/UserContext.jsx";
 // Components
 import SessionCheck from "./components/checkSession.jsx";
 
-function ProtectedLayout() {
-    return (
-        <SessionCheck>
-            {({ user }) =>
-                user ? (
-                    <UserContext.Provider value={user}>
-                        <Outlet />
-                    </UserContext.Provider>
-                ) : (
-                    <Navigate to="/login" />
-                )
-            }
-        </SessionCheck>
-    );
-}
+
 
 function App() {
     const { theme } = useTheme();
@@ -47,7 +33,7 @@ function App() {
                 <Route path="/twofactorform" element={<TwoFactorForm />} />
 
                 {/* Protected Routes */}
-                <Route element={<ProtectedLayout />}>
+               
                     <Route path="/dashboard" element={<Dashboard />}>
                         <Route index element={<Navigate to="messages" />} />
                         <Route path="messages" element={<Messages />} />
@@ -56,7 +42,7 @@ function App() {
                         <Route path="giving" element={<Test />} />
                         <Route path="profile" element={<Profile />} />
                     </Route>
-                </Route>
+                
             </Routes>
         </div>
     );
