@@ -2,7 +2,7 @@ import userRoutes from './routes/userRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import roomRoutes from './routes/rooms.js';
 import fileRoutes from './routes/fileRoutes.js';
-import { setupSocket } from './services/socket2.js'; // Import your socket service
+import { setupSocket } from "./socket/index.js"; // Import your socket service
 
 import express from 'express';
 import cors from 'cors';
