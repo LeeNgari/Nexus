@@ -1,6 +1,66 @@
 import pool from '../config/db.js';
 import { validate } from 'uuid';
 
+export async function createGroupRoom(name, createdBy, isPrivate) {
+  const client = await pool.connect();
+  try {
+      await client.query('BEGIN');
+      
+      // Insert new room
+      const roomQuery = `
+          INSERT INTO rooms (id, name, created_by, is_private, created_at)
+          VALUES (gen_random_uuid(), $1, $2, $3, CURRENT_TIMESTAMP)
+          RETURNING id
+      `;
+      const roomResult = await client.query(roomQuery, [name, createdBy, isPrivate]);
+      const roomId = roomResult.rows[0].id;
+      
+      // Add creator as a member
+      const memberQuery = `
+          INSERT INTO room_members (room_id, user_id, joined_at)
+          VALUES ($1, $2, CURRENT_TIMESTAMP)
+      `;
+      await client.query(memberQuery, [roomId, createdBy]);
+      
+      await client.query('COMMIT');
+      return roomId;
+  } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+  } finally {
+      client.release();
+  }
+}
+
+// Function to add multiple members to a group
+export async function addMembersToGroup(roomId, userIds) {
+  const client = await pool.connect();
+  try {
+      await client.query('BEGIN');
+      
+      // Prepare query for inserting multiple members
+      const memberQuery = `
+          INSERT INTO room_members (room_id, user_id, joined_at)
+          VALUES ($1, $2, CURRENT_TIMESTAMP)
+          ON CONFLICT DO NOTHING
+      `;
+      
+      // Add each user to the room
+      for (const userId of userIds) {
+          await client.query(memberQuery, [roomId, userId]);
+      }
+      
+      await client.query('COMMIT');
+      return true;
+  } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+  } finally {
+      client.release();
+  }
+}
+
+
 export const createRoom = async (name, creatorId, isPrivate = false) => {
   // Validation
   if (!name?.trim()) throw new Error('Room name is required');

@@ -3,11 +3,38 @@ import {
     findRoomById, 
     findRoomsByUser, 
     addRoomMember, 
+    createGroupRoom, addMembersToGroup,
     removeRoomMember 
   } from '../models/Room.js';
-  import { getIO } from '../socket.js';
+//import { getIO } from '../socket.js';
+
   
-  export const createRoomHandler = async (req, res) => {
+export async function createGroup(req, res) {
+    try {
+        const creatorId = req.user.id 
+        const { name, isPrivate, memberIds } = req.body;
+        
+        const roomId = await createGroupRoom(name, creatorId, isPrivate);
+        
+        if (memberIds && memberIds.length > 0) {
+            await addMembersToGroup(roomId, memberIds);
+        }
+        
+        res.status(201).json({
+            success: true,
+            roomId,
+            message: 'Group created successfully'
+        });
+    } catch (error) {
+        console.error('Error creating group:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create group'
+        });
+    }
+}
+
+export const createRoomHandler = async (req, res) => {
     try {
       const { name, isPrivate } = req.body;
       const room = await createRoom(name, req.user.id, isPrivate);

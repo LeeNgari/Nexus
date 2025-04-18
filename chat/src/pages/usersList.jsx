@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
+import ThemeToggle from "../components/ThemeToggle";
+import { useLocation, useNavigate } from 'react-router-dom'; 
 
 // --- Configuration ---
-const SOCKET_SERVER_URL = 'http://localhost:3000'; // Replace with your backend URL
+const SOCKET_SERVER_URL = 'http://localhost:5000'; // Replace with your backend URL
 const TYPING_TIMER_LENGTH = 3000; // ms -> 3 seconds delay for typing_stop
 
 // --- Default Avatar URLs ---
@@ -48,6 +50,9 @@ function ChatApp() {
     // --- Refs ---
     const messagesEndRef = useRef(null);
     const typingTimeoutRef = useRef(null);
+
+    const location = useLocation(); // Get location object which contains state
+    const navigate = useNavigate();
 
     // --- Utility Functions ---
     const addUiError = (message) => { console.error("UI Error:", message); setError(message); };
@@ -230,172 +235,315 @@ function ChatApp() {
 
     // --- Component Rendering (JSX) ---
     return (
-        <div className="flex h-screen font-sans bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden">
-
-            {/* Sidebar Section */}
-            <aside className="w-1/4 md:w-1/3 lg:w-1/4 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0">
-                {/* Sidebar Header */}
-                <header className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-                    <h1 className="text-xl font-bold mb-1">Messenger</h1>
-                    <p className={`text-xs font-medium ${isConnected ? 'text-green-500' : 'text-red-500'}`}> Status: {isConnected ? 'Connected' : 'Disconnected'} </p>
-                    {currentUserId && <p className="text-xs text-gray-500 dark:text-gray-400">Your ID: {currentUserId.substring(0,8)}...</p>}
-                </header>
-
-                {/* Chat Lists Container */}
-                <div className="flex-grow overflow-y-auto">
-                    {isLoadingChats && <p className="p-4 text-center text-gray-500 dark:text-gray-400">Loading chats...</p>}
-
-                    {/* Group Chat List */}
-                    <section className="p-2">
-                        <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 px-2 mb-1 uppercase tracking-wide">Groups</h2>
-                        {groupChats.length === 0 && !isLoadingChats && <p className="px-2 text-xs text-gray-400 italic">No groups found.</p>}
-                        <ul>
-                            {groupChats.map((chat) => (
-                                <li key={chat.id}
-                                    onClick={() => handleSelectChat({ ...chat, type: 'group', name: chat.name })}
-                                    className={`p-2 flex items-center gap-3 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${selectedChat?.id === chat.id ? 'bg-blue-100 dark:bg-blue-900 font-semibold' : ''}`}
-                                    title={chat.name} >
-                                    {/* Group Avatar */}
-                                    <img
-                                        src={chat.avatar_url || DEFAULT_GROUP_AVATAR_URL} // Use group avatar or default
-                                        alt={chat.name || 'Group'}
-                                        className="w-10 h-10 rounded-full flex-shrink-0 object-cover bg-gray-200 dark:bg-gray-600" // Added bg color
-                                        onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_GROUP_AVATAR_URL; }} />
-                                    {/* Group Info */}
-                                    <div className="flex-grow overflow-hidden">
-                                        <span className={`block font-medium truncate ${chat.hasUnread ? 'font-bold' : ''}`}>{chat.name || `Group ${chat.id.substring(0, 6)}`}</span>
-                                        {/* Can add last message preview later */}
-                                    </div>
-                                    {/* Unread Indicator */}
-                                    {chat.hasUnread && <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 ml-auto"></span>}
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-
-                    {/* Private Chat List */}
-                    <section className="p-2 border-t border-gray-200 dark:border-gray-700">
-                         <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 px-2 mb-1 uppercase tracking-wide">Direct Messages</h2>
-                         {privateChats.length === 0 && !isLoadingChats && <p className="px-2 text-xs text-gray-400 italic">No private chats found.</p>}
-                         <ul>
-                           {privateChats.map((chat) => {
-                             // Use chat.name and chat.avatar_url directly as per new structure
-                             const chatName = chat.name || `User ${chat.other_user_id?.substring(0, 6) || chat.id.substring(0,6)}`;
-                             const chatAvatar = chat.avatar_url || DEFAULT_USER_AVATAR_URL;
-                             // Get status using other_user_id
-                             const status = chat.other_user_id ? userStatuses[chat.other_user_id] : null;
-                             return (
-                               <li key={chat.id}
-                                 onClick={() => handleSelectChat({ ...chat, type: 'private', name: chatName })} // Pass chat.name
-                                 className={`p-2 flex items-center gap-3 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${selectedChat?.id === chat.id ? 'bg-blue-100 dark:bg-blue-900 font-semibold' : ''}`}
-                                 title={chatName} >
-                                    {/* Other User's Avatar + Status Dot */}
-                                    <div className="relative flex-shrink-0">
-                                        <img
-                                            src={chatAvatar}
-                                            alt={chatName}
-                                            className="w-10 h-10 rounded-full object-cover bg-gray-200 dark:bg-gray-600" // Added bg color
-                                            onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_USER_AVATAR_URL; }} />
-                                        {/* Online Status Dot */}
-                                        {status && (
-                                             <span className={`absolute bottom-0 right-0 block h-3 w-3 rounded-full border-2 border-white dark:border-gray-800 ${status.isOnline ? 'bg-green-500' : 'bg-gray-400'}`}
-                                                title={status.isOnline ? 'Online' : `Offline${status.lastActive ? ' - Last seen: '+ new Date(status.lastActive).toLocaleTimeString() : ''}`}>
-                                             </span>
-                                        )}
-                                    </div>
-                                    {/* User Info */}
-                                    <div className="flex-grow overflow-hidden">
-                                        <span className={`block font-medium truncate ${chat.hasUnread ? 'font-bold' : ''}`}>{chatName}</span>
-                                        {/* Can add last message preview later */}
-                                    </div>
-                                    {/* Unread Indicator */}
-                                    {chat.hasUnread && <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 ml-auto"></span>}
-                               </li>
-                             );
-                           })}
-                         </ul>
-                       </section>
-                </div>
-            </aside>
-
-            {/* Main Chat Area Section */}
-            <main className="w-3/4 md:w-2/3 lg:w-3/4 h-full flex flex-col bg-gray-50 dark:bg-gray-850">
-                {/* Placeholder or Chat View */}
-                {!selectedChat ? (
-                    <div className="flex-grow flex items-center justify-center text-center text-gray-500 dark:text-gray-400">
-                        <p>Select a chat from the sidebar<br />to start messaging.</p>
-                    </div>
-                ) : (
-                    <>
-                        {/* Chat Header */}
-                        <header className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0">
-                            <h2 className="text-lg font-semibold truncate" title={selectedChat.name}>{selectedChat.name}</h2>
-                            {/* Sub-header for Typing / Online Status */}
-                            <p className="text-xs text-gray-500 dark:text-gray-400 h-4">
-                                {typingDisplayString ? (
-                                    <span className="italic animate-pulse">{typingDisplayString}</span>
-                                ) : (
-                                    selectedChat.type === 'private'
-                                    // Use other_user_id to check status
-                                    ? (userStatuses[selectedChat.other_user_id]?.isOnline ? 'Online' : 'Offline')
-                                    : 'Group Chat'
-                                )}
-                            </p>
-                        </header>
-
-                        {/* Messages Display Area */}
-                        <div className="flex-grow overflow-y-auto p-4 space-y-4">
-                           {isLoadingMessages && <p className="text-center text-gray-500 dark:text-gray-400 py-4">Loading messages...</p>}
-                           {!isLoadingMessages && messages.length === 0 && <p className="text-center text-gray-500 dark:text-gray-400 py-4">No messages in this chat yet.</p>}
-                           {/* Message Mapping */}
-                           {messages.map((msg) => {
-                             const isOwnMessage = msg.senderId === currentUserId;
-                             const senderUsername = msg.sender?.username || 'Unknown User';
-                             const senderAvatar = msg.sender?.avatar_url;
-                             if (!msg.id) return null;
-                             return (
-                               <div key={msg.id} className={`flex items-start gap-3 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
-                                {/* Avatar for others */}
-                                {!isOwnMessage && ( <img src={senderAvatar || DEFAULT_USER_AVATAR_URL} alt={senderUsername} className="w-8 h-8 rounded-full flex-shrink-0 bg-gray-200 dark:bg-gray-600" onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_USER_AVATAR_URL; }}/> )}
-                                 {/* Message Bubble */}
-                                 <div className={`max-w-xs lg:max-w-lg xl:max-w-xl px-4 py-2 rounded-lg shadow-md ${msg.isOptimistic ? 'opacity-70': ''} ${isOwnMessage ? 'bg-blue-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
-                                   {!isOwnMessage && selectedChat.type === 'group' && ( <p className="text-xs font-semibold mb-1 text-indigo-600 dark:text-indigo-400">{senderUsername}</p> )}
-                                   <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
-                                   <p className={`text-xs mt-1 ${isOwnMessage ? 'text-blue-200' : 'text-gray-500 dark:text-gray-400'} text-right`}> {formatTimestamp(msg.timestamp)} </p>
-                                 </div>
-                               </div>
-                             );
-                           })}
-                           <div ref={messagesEndRef} />
-                        </div>
-
-                         {/* Error Display */}
-                        {error && (
-                            <div className="p-2 bg-red-100 border-t border-red-300 text-red-800 text-sm flex justify-between items-center flex-shrink-0" role="alert">
-                                <span><span className="font-bold">Error:</span> {error}</span>
-                                <button onClick={clearError} className="font-bold text-red-600 hover:text-red-800 ml-2 p-1 leading-none rounded-full focus:outline-none focus:ring-1 focus:ring-red-500" aria-label="Dismiss error">✕</button>
-                            </div>
-                        )}
-
-                        {/* Message Input Form */}
-                        <footer className="p-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
-                          <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                            <input
-                              type="text" placeholder="Type your message..." value={newMessageContent}
-                              onChange={handleInputChange} onBlur={handleTypingStop}
-                              className="flex-grow px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:border-blue-500"
-                              disabled={!isConnected || isLoadingMessages} autoFocus autoComplete="off" />
-                            <button type="submit"
-                              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:focus:ring-offset-gray-800"
-                              disabled={!isConnected || isLoadingMessages || !newMessageContent.trim()} >
-                              Send
-                            </button>
-                          </form>
-                        </footer>
-                    </>
-                )}
-            </main>
+        <div className="flex flex-col h-screen bg-background text-text-primary">
+  {/* Header */}
+  <header className="flex items-center justify-between p-6 border-b border-border">
+    <h1 className="text-2xl font-semibold">Messenger</h1>
+    <div className="flex items-center gap-4 md:gap-6">
+      <div className={`text-xs font-medium ${isConnected ? 'text-green-500' : 'text-red-500'}`}>
+        Status: {isConnected ? 'Connected' : 'Disconnected'}
+      </div>
+      {currentUserId && (
+        <div className="hidden md:block">
+          <div className="text-xs text-text-secondary">Your ID: {currentUserId.substring(0,8)}...</div>
         </div>
+      )}
+    </div>
+     <ThemeToggle />
+  </header>
+
+  {/* Main content */}
+  <div className="flex flex-1 overflow-hidden">
+    {/* Conversations Sidebar */}
+    <div className="w-full md:w-[380px] lg:w-[420px] border-r border-border flex flex-col">
+      {/* Search Input */}
+      <div className="p-4 border-b border-border">
+        <div className="relative">
+          <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+            <svg className="w-5 h-5 text-text-secondary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.3-4.3"></path>
+            </svg>
+          </span>
+          <input
+            type="search"
+            placeholder="Search conversations..."
+            className="w-full pl-10 pr-4 py-2 rounded-lg bg-input border border-border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          />
+        </div>
+      </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="p-3 m-4 bg-red-100 text-red-700 rounded-md text-sm">
+          {error}
+          <button onClick={clearError} className="float-right font-bold text-red-600 hover:text-red-800">
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Tabs and Conversation List */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="grid grid-cols-3 gap-1 px-4 pt-4">
+          <button className="px-4 py-2 rounded-md text-sm font-medium">All</button>
+          <button className="px-4 py-2 rounded-md text-sm font-medium">People</button>
+          <button className="px-4 py-2 rounded-md text-sm font-medium">Groups</button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto px-2 py-2">
+          {/* Group Chat List */}
+          <section className="p-2">
+            <h2 className="text-sm font-semibold text-text-secondary px-2 mb-1 uppercase tracking-wide">Groups</h2>
+            {isLoadingChats && <p className="p-4 text-center text-text-secondary">Loading chats...</p>}
+            {groupChats.length === 0 && !isLoadingChats && (
+              <p className="px-2 text-xs text-text-secondary italic">No groups found.</p>
+            )}
+            <div className="space-y-1">
+              {groupChats.map((chat) => (
+                <div
+                  key={chat.id}
+                  onClick={() => handleSelectChat({ ...chat, type: 'group', name: chat.name })}
+                  className={`p-2 flex items-center gap-3 rounded-md cursor-pointer hover:bg-hover ${
+                    selectedChat?.id === chat.id ? 'bg-primary/10 font-semibold' : ''
+                  }`}
+                  title={chat.name}
+                >
+                  <img
+                    src={chat.avatar_url || DEFAULT_GROUP_AVATAR_URL}
+                    alt={chat.name || 'Group'}
+                    className="w-10 h-10 rounded-full flex-shrink-0 object-cover bg-gray-200 dark:bg-gray-600"
+                    onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_GROUP_AVATAR_URL; }}
+                  />
+                  <div className="flex-grow overflow-hidden">
+                    <span className={`block font-medium truncate ${chat.hasUnread ? 'font-bold' : ''}`}>
+                      {chat.name || `Group ${chat.id.substring(0, 6)}`}
+                    </span>
+                  </div>
+                  {chat.hasUnread && (
+                    <span className="w-2 h-2 bg-primary rounded-full flex-shrink-0 ml-auto"></span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Private Chat List */}
+          <section className="p-2 border-t border-border">
+            <h2 className="text-sm font-semibold text-text-secondary px-2 mb-1 uppercase tracking-wide">Direct Messages</h2>
+            {privateChats.length === 0 && !isLoadingChats && (
+              <p className="px-2 text-xs text-text-secondary italic">No private chats found.</p>
+            )}
+            <div className="space-y-1">
+              {privateChats.map((chat) => {
+                const chatName = chat.name || `User ${chat.other_user_id?.substring(0, 6) || chat.id.substring(0,6)}`;
+                const chatAvatar = chat.avatar_url || DEFAULT_USER_AVATAR_URL;
+                const status = chat.other_user_id ? userStatuses[chat.other_user_id] : null;
+                
+                return (
+                  <div
+                    key={chat.id}
+                    onClick={() => handleSelectChat({ ...chat, type: 'private', name: chatName })}
+                    className={`p-2 flex items-center gap-3 rounded-md cursor-pointer hover:bg-hover ${
+                      selectedChat?.id === chat.id ? 'bg-primary/10 font-semibold' : ''
+                    }`}
+                    title={chatName}
+                  >
+                    <div className="relative flex-shrink-0">
+                      <img
+                        src={chatAvatar}
+                        alt={chatName}
+                        className="w-10 h-10 rounded-full object-cover bg-gray-200 dark:bg-gray-600"
+                        onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_USER_AVATAR_URL; }}
+                      />
+                      {status && (
+                        <span
+                          className={`absolute bottom-0 right-0 block h-3 w-3 rounded-full border-2 border-white dark:border-gray-800 ${
+                            status.isOnline ? 'bg-green-500' : 'bg-gray-400'
+                          }`}
+                          title={
+                            status.isOnline
+                              ? 'Online'
+                              : `Offline${status.lastActive ? ' - Last seen: ' + new Date(status.lastActive).toLocaleTimeString() : ''}`
+                          }
+                        ></span>
+                      )}
+                    </div>
+                    <div className="flex-grow overflow-hidden">
+                      <span className={`block font-medium truncate ${chat.hasUnread ? 'font-bold' : ''}`}>
+                        {chatName}
+                      </span>
+                    </div>
+                    {chat.hasUnread && (
+                      <span className="w-2 h-2 bg-primary rounded-full flex-shrink-0 ml-auto"></span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    {/* Message Display Area */}
+    <div className="flex-1 flex flex-col bg-muted/30">
+      {!selectedChat ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-text-secondary">
+          <svg
+            className="w-16 h-16 mb-4 text-gray-400"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-3.04 8.25-7.625 8.25-1.414 0-2.743-.372-3.875-.968a.375.375 0 0 1-.112-.477m-.283-3.546a.375.375 0 0 0-.112-.477m0 0c-.399-.285-.84-.487-1.312-.613a4.5 4.5 0 0 1 0-7.752c.472-.126.913-.328 1.313-.612m3.875 9.24a.375.375 0 0 1 .112.477m0 0a4.496 4.496 0 0 0 4.125-3.234m0 0a4.496 4.496 0 0 0 0-6.468m0 0a4.504 4.504 0 0 0-4.125-3.234m0 0a.375.375 0 0 0-.112.477m-.283 3.546a.375.375 0 0 1-.112.477"
+            />
+          </svg>
+          <h3 className="text-lg font-medium text-text-primary">Select a conversation</h3>
+          <p className="mt-1 text-sm">Choose from your existing conversations or start a new one.</p>
+        </div>
+      ) : (
+        <>
+          {/* Conversation Header */}
+          <div className="flex items-center justify-between p-4 border-b border-border bg-background">
+            <div className="flex items-center gap-3">
+              <img
+                src={
+                  selectedChat.type === 'group'
+                    ? selectedChat.avatar_url || DEFAULT_GROUP_AVATAR_URL
+                    : selectedChat.avatar_url || DEFAULT_USER_AVATAR_URL
+                }
+                alt={selectedChat.name}
+                width={48}
+                height={48}
+                className="rounded-full"
+              />
+              <div>
+                <div className="font-semibold">{selectedChat.name}</div>
+                <div className="text-xs text-text-secondary h-4">
+                  {typingDisplayString ? (
+                    <span className="italic animate-pulse text-primary">{typingDisplayString}</span>
+                  ) : selectedChat.type === 'private' ? (
+                    userStatuses[selectedChat.other_user_id]?.isOnline ? (
+                      <span className="text-green-500 flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                        Online
+                      </span>
+                    ) : (
+                      'Offline'
+                    )
+                  ) : (
+                    'Group Chat'
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 relative">
+            {isLoadingMessages && (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10">
+                <p className="text-text-secondary">Loading messages...</p>
+              </div>
+            )}
+            {!isLoadingMessages && messages.length === 0 && (
+              <p className="text-center text-text-secondary py-4">No messages in this chat yet.</p>
+            )}
+            {messages.map((msg) => {
+              const isOwnMessage = msg.senderId === currentUserId;
+              const senderUsername = msg.sender?.username || 'Unknown User';
+              const senderAvatar = msg.sender?.avatar_url;
+              if (!msg.id) return null;
+
+              return (
+                <div
+                  key={msg.id}
+                  className={`flex items-start gap-3 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                >
+                  {!isOwnMessage && (
+                    <img
+                      src={senderAvatar || DEFAULT_USER_AVATAR_URL}
+                      alt={senderUsername}
+                      className="w-8 h-8 rounded-full flex-shrink-0 bg-gray-200 dark:bg-gray-600"
+                      onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_USER_AVATAR_URL; }}
+                    />
+                  )}
+                  <div
+                    className={`max-w-xs lg:max-w-lg xl:max-w-xl px-4 py-2 rounded-lg shadow-sm ${
+                      msg.isOptimistic ? 'opacity-70' : ''
+                    } ${
+                      isOwnMessage
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-white dark:bg-gray-700 text-text-primary'
+                    }`}
+                  >
+                    {!isOwnMessage && selectedChat.type === 'group' && (
+                      <p className="text-xs font-semibold mb-1 text-indigo-600 dark:text-indigo-400">
+                        {senderUsername}
+                      </p>
+                    )}
+                    <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                    <p
+                      className={`text-xs mt-1 ${
+                        isOwnMessage ? 'text-primary-foreground/70' : 'text-text-secondary'
+                      } text-right`}
+                    >
+                      {formatTimestamp(msg.timestamp)}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Message Input Area */}
+          <div className="p-4 border-t border-border bg-background">
+            <form onSubmit={handleSendMessage} className="flex items-center gap-3">
+              <input
+                type="text"
+                placeholder="Type your message..."
+                value={newMessageContent}
+                onChange={handleInputChange}
+                onBlur={handleTypingStop}
+                className="flex-1 px-4 py-2 rounded-lg bg-input border border-border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                disabled={!isConnected || isLoadingMessages}
+                autoFocus
+                autoComplete="off"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
+                disabled={!isConnected || isLoadingMessages || !newMessageContent.trim()}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </form>
+          </div>
+        </>
+      )}
+    </div>
+  </div>
+</div>
     );
 }
 

@@ -3,7 +3,6 @@ import db from  "../../config/db.js";
 import { formatMessageRow } from '../utils/formatters.js';
 
 
-
 export async function getUserPrivateChatsWithAvatars(userId) {
   const queryText = `
     SELECT 
