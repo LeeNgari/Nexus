@@ -238,7 +238,7 @@ function ChatApp() {
         <div className="flex flex-col h-screen bg-background text-text-primary">
   {/* Header */}
   <header className="flex items-center justify-between p-6 border-b border-border">
-    <h1 className="text-2xl font-semibold">Messenger</h1>
+    <h1 className="text-2xl font-semibold">Messedadadsager</h1>
     <div className="flex items-center gap-4 md:gap-6">
       <div className={`text-xs font-medium ${isConnected ? 'text-green-500' : 'text-red-500'}`}>
         Status: {isConnected ? 'Connected' : 'Disconnected'}

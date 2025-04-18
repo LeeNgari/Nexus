@@ -191,3 +191,68 @@ export async function createGroupMessage(roomId, senderId, content) {
     throw error;
   }
 }
+export async function getUserGroupChatsWithLastMessage(userId) {
+  const queryText = `
+    SELECT
+      r.id,
+      r.name,
+      r.created_at, -- Keep room creation time as a fallback/info
+      MAX(m.created_at) AS last_message_at -- Find the timestamp of the latest message for the room
+    FROM rooms r
+    JOIN room_members rm ON r.id = rm.room_id -- Join to filter for rooms the user is a member of
+    LEFT JOIN messages m ON r.id = m.room_id -- Use LEFT JOIN to include rooms with NO messages yet
+    WHERE rm.user_id = $1
+    GROUP BY r.id, r.name, r.created_at -- Group by all non-aggregated columns
+    -- ORDERING: This specific function doesn't need ORDER BY here if you combine and sort in the backend handler.
+    -- If you ONLY wanted group chats sorted by last message, you'd add:
+    -- ORDER BY last_message_at DESC NULLS LAST, r.created_at DESC
+  `;
+
+  try {
+    const result = await db.query(queryText, [userId]);
+    // Assuming 'avatar_url' for groups isn't directly in the rooms table.
+    // If it were, add it to the SELECT and GROUP BY.
+    // You might need to manually add a default_group_avatar_url in the backend logic or frontend.
+    return result.rows;
+  } catch (error) {
+    console.error(`Error in getUserGroupChatsWithLastMessage for user ${userId}:`, error);
+    throw error;
+  }
+}
+export async function getUserPrivateChatsWithLastMessage(userId) { // Renamed function for clarity
+  const queryText = `
+    SELECT
+      pc.id,
+      CASE
+        WHEN pc.user1_id = $1 THEN u2.id
+        ELSE u1.id
+      END as other_user_id,
+      CASE
+        WHEN pc.user1_id = $1 THEN u2.username
+        ELSE u1.username
+      END as other_user_username,
+      CASE
+        WHEN pc.user1_id = $1 THEN u2.avatar_url
+        ELSE u1.avatar_url
+      END as other_user_avatar_url,
+      pc.created_at, -- Keep chat creation time as a fallback/info
+      MAX(m.created_at) AS last_message_at -- Find the timestamp of the latest message
+    FROM private_chats pc
+    JOIN users u1 ON pc.user1_id = u1.id
+    JOIN users u2 ON pc.user2_id = u2.id
+    LEFT JOIN messages m ON pc.id = m.private_chat_id -- Use LEFT JOIN to include chats with NO messages yet
+    WHERE pc.user1_id = $1 OR pc.user2_id = $1
+    GROUP BY pc.id, u1.id, u2.id, u1.username, u2.username, u1.avatar_url, u2.avatar_url, pc.created_at -- Group by all non-aggregated columns
+    -- ORDERING: This specific function doesn't need ORDER BY here if you combine and sort in the backend handler.
+    -- If you ONLY wanted private chats sorted by last message, you'd add:
+    -- ORDER BY last_message_at DESC NULLS LAST, pc.created_at DESC
+  `;
+
+  try {
+    const result = await db.query(queryText, [userId]);
+    return result.rows;
+  } catch (error) {
+    console.error(`Error in getUserPrivateChatsWithLastMessage for user ${userId}:`, error);
+    throw error;
+  }
+}

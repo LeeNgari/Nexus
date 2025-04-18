@@ -23,31 +23,6 @@ const navItems = [
     ),
   },
   {
-    name: "People",
-    href: "/dashboard/people",
-    icon: (
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="w-5 h-5"
-        >
-          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-          <circle cx="9" cy="7" r="4"></circle>
-          <path d="M17 5v2"></path>
-          <path d="M21 5v2"></path>
-          <path d="M19 3h2"></path>
-          <path d="M19 7h2"></path>
-        </svg>
-    ),
-  },
-  {
     name: "Status",
     href: "/dashboard/giving",
     icon: (
@@ -152,7 +127,7 @@ export default function Sidebar() {
 
   const logout = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/logout', {
+      const response = await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include', // Important for cookies
       });
@@ -211,63 +186,25 @@ export default function Sidebar() {
         </button>
 
         {/* Logo/Header */}
-        <div className="p-5 border-b flex items-center justify-center">
-          {isCollapsed ? (
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-white font-bold">
-                F
-              </div>
-          ) : (
-              <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                floakly
-              </h1>
-          )}
-        </div>
+        <div className="p-5 border-b flex items-center justify-center bg-white">
+  {isCollapsed ? (
+    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center overflow-hidden shadow-md">
+      <img
+        src="data:image/png;base64,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"
+        className="w-full h-full object-cover"
+      />
+    </div>
+  ) : (
+    <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text  block relative z-10">
+    Nexus
+  </h1>
+  
+  )}
+</div>
+
 
         {/* User Info Panel */}
-        {!isCollapsed && userData && (
-            <div className="p-4 border-b">
-              <div className="flex items-center gap-3 mb-3">
-                {userData.avatar_url ? (
-                    <img
-                        src={userData.avatar_url}
-                        alt={userData.username}
-                        className="w-12 h-12 rounded-full"
-                    />
-                ) : (
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-medium">
-                      {getInitials(userData.username)}
-                    </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium">{userData.username}</p>
-                  <p className="text-xs text-muted-foreground truncate">{userData.email}</p>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1 mt-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Status:</span>
-                  <span className="flex items-center">
-                {userData.is_online ? (
-                    <>
-                      <span className="w-2 h-2 rounded-full bg-green-500 mr-1.5"></span>
-                      <span className="text-green-500">Online</span>
-                    </>
-                ) : (
-                    <>
-                      <span className="w-2 h-2 rounded-full bg-gray-400 mr-1.5"></span>
-                      <span>Offline</span>
-                    </>
-                )}
-              </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Last active:</span>
-                  <span>{formatLastActive(userData.last_active)}</span>
-                </div>
-              </div>
-            </div>
-        )}
+       
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
