@@ -12,11 +12,10 @@ function Header({ isConnected, currentUserId }) {
                 </div>
                 {currentUserId && (
                     <div className="hidden md:block">
-                        <div className="text-xs text-text-secondary">Your ID: {currentUserId.substring(0, 8)}...</div>
+                        <div className="text-xs text-text-secondary">ID: {currentUserId.substring(0, 8)}...</div>
                     </div>
                 )}
             </div>
-            <ThemeToggle />
         </header>
     );
 }

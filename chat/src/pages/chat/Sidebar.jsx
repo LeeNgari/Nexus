@@ -71,80 +71,157 @@ function Sidebar({
 
 
     return (
-        <div className="w-full md:w-[380px] lg:w-[420px] border-r border-border flex flex-col bg-background">
-            {/* Search Input */}
-            <div className="p-4 border-b border-border">
-                {/* ... (Search Input JSX) ... */}
-                 <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                        <svg className="w-5 h-5 text-text-secondary" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <path d="m21 21-4.3-4.3"></path>
-                        </svg>
-                    </span>
-                    <input
-                        type="search"
-                        placeholder="Search conversations..."
-                        className="w-full pl-10 pr-4 py-2 rounded-lg bg-input border border-border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                    />
-                </div>
-            </div>
-
-            {/* Error Display */}
-            {error && (
-                <div className="p-3 m-4 bg-red-100 text-red-700 rounded-md text-sm dark:bg-red-900 dark:text-red-200">
-                    {error}
-                    <button onClick={clearError} className="float-right font-bold text-red-600 hover:text-red-800 dark:text-red-300 dark:hover:text-red-100">
-                        ✕
-                    </button>
-                </div>
-            )}
-
-            {/* Filter Tabs and Conversation List Area */}
-            <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Filter Tabs */}
-                <div className="grid grid-cols-3 gap-1 px-4 pt-4 border-b border-border">
-                    <button
-                        className={`px-4 py-2 rounded-t-md text-sm font-medium ${filterType === 'all' ? 'bg-primary text-primary-foreground' : 'text-text-secondary hover:bg-hover'}`}
-                        onClick={() => onFilterChange('all')}
-                    >All</button>
-                    <button
-                         className={`px-4 py-2 rounded-t-md text-sm font-medium ${filterType === 'private' ? 'bg-primary text-primary-foreground' : 'text-text-secondary hover:bg-hover'}`}
-                         onClick={() => onFilterChange('private')}
-                    >People</button>
-                    <button
-                         className={`px-4 py-2 rounded-t-md text-sm font-medium ${filterType === 'group' ? 'bg-primary text-primary-foreground' : 'text-text-secondary hover:bg-hover'}`}
-                         onClick={() => onFilterChange('group')}
-                    >Groups</button>
-                </div>
-
-                {/* Chat List Area - Render the single visibleChats list */}
-                <div className="flex-1 overflow-y-auto px-2 py-2">
-                    {isLoadingChats && <p className="p-4 text-center text-text-secondary text-sm italic">Loading chats...</p>}
-
-                    {/* Show empty message only if not loading and the visible list is empty */}
-                    {!isLoadingChats && visibleChats.length === 0 && (
-                         <p className="p-4 text-center text-text-secondary text-sm italic">
-                           {emptyMessage}
-                         </p>
-                     )}
-
-                     {/* Render the list of visible chats */}
-                    <div className="space-y-1">
-                        {/* Map over the single visibleChats array */}
-                        {!isLoadingChats && visibleChats.map((chat) => (
-                            <ChatListItem
-                                key={chat.id} // Key is based on chat/room id
-                                chat={chat} // Pass the chat object (includes type, name, avatar_url, other_user_id, last_message_at etc.)
-                                isSelected={selectedChat?.id === chat.id}
-                                onSelect={onSelectChat}
-                                userStatuses={userStatuses}
-                            />
-                        ))}
-                    </div>
-                </div>
-            </div>
+          <div className="w-full md:w-[380px] lg:w-[420px] border-r border-border flex flex-col bg-background h-full">
+      {/* Search Input */}
+      <div className="p-4 border-b border-border">
+        <div className="relative">
+          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
+            <svg
+              className="w-5 h-5"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.3-4.3"></path>
+            </svg>
+          </span>
+          <input
+            type="search"
+            placeholder="Search conversations..."
+            className="w-full pl-10 pr-4 py-2 rounded-lg bg-input border border-border focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent placeholder:text-muted-foreground"
+          />
         </div>
+      </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="p-3 m-4 bg-destructive/10 text-destructive rounded-md text-sm flex items-center justify-between">
+          <span>{error}</span>
+          <button
+            onClick={clearError}
+            className="ml-2 p-1 rounded-full hover:bg-destructive/20 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Filter Tabs and Conversation List Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Filter Tabs */}
+        <div className="grid grid-cols-3 gap-1 px-4 pt-4 border-b border-border">
+          <button
+            className={`px-4 py-2 rounded-t-md text-sm font-medium transition-colors relative ${
+              filterType === 'all'
+                ? 'text-primary bg-primary/10 font-semibold'
+                : 'text-muted-foreground hover:bg-accent'
+            }`}
+            onClick={() => onFilterChange('all')}
+          >
+            All
+            {filterType === 'all' && (
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-full"></span>
+            )}
+          </button>
+          <button
+            className={`px-4 py-2 rounded-t-md text-sm font-medium transition-colors relative ${
+              filterType === 'private'
+                ? 'text-primary bg-primary/10 font-semibold'
+                : 'text-muted-foreground hover:bg-accent'
+            }`}
+            onClick={() => onFilterChange('private')}
+          >
+            People
+            {filterType === 'private' && (
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-full"></span>
+            )}
+          </button>
+          <button
+            className={`px-4 py-2 rounded-t-md text-sm font-medium transition-colors relative ${
+              filterType === 'group'
+                ? 'text-primary bg-primary/10 font-semibold'
+                : 'text-muted-foreground hover:bg-accent'
+            }`}
+            onClick={() => onFilterChange('group')}
+          >
+            Groups
+            {filterType === 'group' && (
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-full"></span>
+            )}
+          </button>
+        </div>
+
+        {/* Chat List Area */}
+        <div className="flex-1 overflow-y-auto px-2 py-2">
+          {isLoadingChats && (
+            <div className="p-4 text-center text-muted-foreground text-sm italic">
+              <div className="flex justify-center">
+                <svg
+                  className="animate-spin h-5 w-5 mr-2 text-primary"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Loading chats...
+              </div>
+            </div>
+          )}
+
+          {!isLoadingChats && visibleChats.length === 0 && (
+            <div className="p-4 text-center text-muted-foreground text-sm italic">
+              {emptyMessage}
+            </div>
+          )}
+
+          <div className="space-y-1">
+            {!isLoadingChats &&
+              visibleChats.map((chat) => (
+                <ChatListItem
+                  key={chat.id}
+                  chat={chat}
+                  isSelected={selectedChat?.id === chat.id}
+                  onSelect={onSelectChat}
+                  userStatuses={userStatuses}
+                />
+              ))}
+          </div>
+        </div>
+      </div>
+    </div>
     );
 }
 
